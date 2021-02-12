@@ -6,6 +6,8 @@ ENV VER_LUA_NGINX_MODULE=0.10.19
 ENV VER_NGINX=1.19.6
 ENV VER_CONNECT_NGINX_MODULE=0.0.2
 ENV VER_LUAJIT=2.1-20201229
+ENV VER_RESTY_CORE=0.1.21
+ENV VER_RESTY_LRUCACHE=0.10
 
 ENV NGINX_DEVEL_KIT ngx_devel_kit-${VER_NGINX_DEVEL_KIT}
 ENV LUA_NGINX_MODULE lua-nginx-module-${VER_LUA_NGINX_MODULE}
@@ -26,6 +28,8 @@ RUN wget https://github.com/openresty/luajit2/archive/v${VER_LUAJIT}.tar.gz -O $
 RUN wget https://github.com/simpl/ngx_devel_kit/archive/v${VER_NGINX_DEVEL_KIT}.tar.gz -O ${NGINX_DEVEL_KIT}.tar.gz
 RUN wget https://github.com/openresty/lua-nginx-module/archive/v${VER_LUA_NGINX_MODULE}.tar.gz -O ${LUA_NGINX_MODULE}.tar.gz
 RUN wget https://github.com/chobits/ngx_http_proxy_connect_module/archive/v${VER_CONNECT_NGINX_MODULE}.tar.gz -O ${CONNECT_NGINX_MODULE}.tar.gz
+RUN wget https://github.com/openresty/lua-resty-core/archive/v${VER_RESTY_CORE}.tar.gz
+RUN wget https://github.com/openresty/lua-resty-lrucache/archive/v${VER_RESTY_LRUCACHE}.tar.gz
 # Untar
 RUN tar -xzvf nginx-${VER_NGINX}.tar.gz && rm nginx-${VER_NGINX}.tar.gz
 RUN tar -xzvf ${NGINX_DEVEL_KIT}.tar.gz && rm ${NGINX_DEVEL_KIT}.tar.gz
@@ -37,6 +41,12 @@ RUN tar -zxvf ${LUAJIT}.tar.gz && rm ${LUAJIT}.tar.gz
 WORKDIR luajit2-${VER_LUAJIT}
 RUN make -j 4
 RUN make install
+
+RUN mkdir -p /usr/local/share/lua/5.1
+RUN tar -zxvf /v${VER_RESTY_CORE}.tar.gz
+RUN cp -a lua-resty-core-${VER_RESTY_CORE}/lib/* /usr/local/share/lua/5.1/
+RUN tar -zxvf /v${VER_RESTY_LRUCACHE}.tar.gz
+RUN cp -a lua-resty-lrucache-${VER_RESTY_LRUCACHE}/lib/* /usr/local/share/lua/5.1/
 
 WORKDIR /nginx-${VER_NGINX}
 RUN patch -p1 < /${CONNECT_NGINX_MODULE}/patch/proxy_connect_rewrite_1018.patch
@@ -53,11 +63,7 @@ EXPOSE 80
 EXPOSE 443
 
 # ***** CLEANUP *****
-RUN rm -rf /nginx-${VER_NGINX}
-RUN rm -rf /${NGINX_DEVEL_KIT}
-RUN rm -rf /${LUA_NGINX_MODULE}
-# TODO: Uninstall build only dependencies?
-# TODO: Remove env vars used only for build?
+RUN rm -rf /nginx-${VER_NGINX} /${NGINX_DEVEL_KIT} /${LUA_NGINX_MODULE} /luajit2-${VER_LUAJIT} lua-resty-core-${VER_RESTY_CORE} lua-resty-lrucache-${VER_RESTY_LRUCACHE} 
+RUN DEBIAN_FRONTEND=noninteractive apt-get -qq remove libpcre3-dev zlib1g-dev libssl-dev
 
-# This is the default CMD used by nginx:1.9.2 image
 CMD ["nginx", "-g", "daemon off;"]
