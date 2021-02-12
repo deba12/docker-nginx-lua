@@ -40,7 +40,9 @@ RUN make install
 
 WORKDIR /nginx-${VER_NGINX}
 RUN patch -p1 < /${CONNECT_NGINX_MODULE}/patch/proxy_connect_rewrite_1018.patch
-RUN ./configure --prefix=${NGINX_ROOT} --with-ld-opt="-Wl,-rpath,${LUAJIT_LIB}" --add-module=/${NGINX_DEVEL_KIT} --add-module=/${LUA_NGINX_MODULE} --add-module=/${CONNECT_NGINX_MODULE}
+RUN ./configure --prefix=${NGINX_ROOT} --with-ld-opt="-Wl,-rpath,${LUAJIT_LIB}" \
+	--add-module=/${NGINX_DEVEL_KIT} --add-module=/${LUA_NGINX_MODULE} --add-module=/${CONNECT_NGINX_MODULE} \
+	--with-http_ssl_module --with-pcre
 RUN make -j4
 RUN make install
 RUN ln -s ${NGINX_ROOT}/sbin/nginx /usr/local/sbin/nginx
